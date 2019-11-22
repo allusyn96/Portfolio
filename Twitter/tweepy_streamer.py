@@ -17,6 +17,9 @@ class TwitterClient():
 
         self.twitter_user = twitter_user
 
+    def get_twitter_client_api(self):
+        return self.twitter_client
+
     def get_user_timeline_tweets(self, num_tweets):
         tweets = []
         for tweet in Cursor(self.twitter_client.user_timeline, id=self.twitter_user).items(num_tweets):
@@ -81,8 +84,19 @@ class TwitterListener(StreamListener):
             return False
         print(status)
 
+class TweetAnalyzer():
+    '''
+    Analyzing and categorizing content from tweets
+    '''
+    def tweets_do_dataframe(self, tweets):
+        df = pd.DataFrame(data=[tweet.text for tweet in tweets], columns=['Tweets'])
+        return df
+
+
+
 if __name__ == '__main__':
 
+    '''
     hash_tag_list = ['kylie jenner', 'drake', 'kanye', 'kim kardashian']
     fetched_tweets_filename = 'tweets.json'
 
@@ -91,3 +105,16 @@ if __name__ == '__main__':
     
     twitter_client = TwitterClient('pycon')
     print(twitter_client.get_user_timeline_tweets(1))
+    '''
+
+    #Create client to use API
+    twitter_client = TwitterClient()
+    api = twitter_client.get_twitter_client_api()
+
+    #get tweets from user
+    tweets = api.user_timeline(screen_name='realDonaldTrump', count=20)
+    
+    #call function to store tweets in a dataframe
+    tweet_analyzer = TweetAnalyzer()
+    df = tweet_analyzer.tweets_do_dataframe(tweets)
+    print(df.head())
