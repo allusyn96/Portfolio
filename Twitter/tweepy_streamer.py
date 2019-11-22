@@ -3,11 +3,13 @@ from tweepy import Cursor
 from tweepy.streaming import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
+from textblob import TextBlob
 
 import twitter_access
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import re
 
 #Twitter Client
 class TwitterClient():
@@ -90,7 +92,7 @@ class TweetAnalyzer():
     Analyzing and categorizing content from tweets
     '''
     def tweets_do_dataframe(self, tweets):
-        df = pd.DataFrame(data=[tweet.text for tweet in tweets], columns=['Tweets'])
+        df = pd.DataFrame(data=[tweet.text for tweet in tweets], columns=['tweets'])
 
         df['id'] = np.array([tweet.id for tweet in tweets])
         df['len'] = np.array([len(tweet.text) for tweet in tweets])
@@ -100,6 +102,17 @@ class TweetAnalyzer():
         df['retweets'] = np.array([tweet.retweet_count for tweet in tweets])
 
         return df
+
+    def clean_tweet(self, tweet):
+        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
+
+    def analyze_sentiment(self, tweet):
+        cleaned_tweet = self.clean_tweet(tweet)
+        analysis = TextBlob(self.clean_tweet(tweet))
+
+        if analysis.sentiment.polarity > 0: return 1 #positive
+        elif analysis.sentiment.polarity < 0: return -1 #negative
+        else: return 0 #neutral
 
 if __name__ == '__main__':
 
@@ -114,6 +127,7 @@ if __name__ == '__main__':
     print(twitter_client.get_user_timeline_tweets(1))
     '''
 
+
     #Create client to use API
     twitter_client = TwitterClient()
     api = twitter_client.get_twitter_client_api()
@@ -124,7 +138,10 @@ if __name__ == '__main__':
     #call function to store tweets in a dataframe
     tweet_analyzer = TweetAnalyzer()
     df = tweet_analyzer.tweets_do_dataframe(tweets)
+    df['sentiment'] = np.array([tweet_analyzer.analyze_sentiment(tweet) for tweet in df['tweets']])
+    print(df.head())
 
+    '''
     #Get average length over all tweets
     #print(np.mean(df['len']))
 
@@ -135,7 +152,6 @@ if __name__ == '__main__':
     #print(np.max(df['retweets']))
 
     #Time Series Plot showing the number of likes for tweets over the course of a few dates
-    '''
     time_likes = pd.Series(data=df['likes'].values, index=df['date'])
     time_likes.plot(figsize=(16, 4), color='r')
     plt.show()
@@ -143,11 +159,11 @@ if __name__ == '__main__':
     time_retweets = pd.Series(data=df['retweets'].values, index=df['date'])
     time_retweets.plot(figsize=(16, 4), color='r')
     plt.show()
-    '''
 
     time_likes = pd.Series(data=df['likes'].values, index=df['date'])
     time_likes.plot(figsize=(16, 4), label='likes', legend=True)
-    
+
     time_retweets = pd.Series(data=df['retweets'].values, index=df['date'])
     time_retweets.plot(figsize=(16, 4), label='retweets', legend=True)
     plt.show()
+    '''
